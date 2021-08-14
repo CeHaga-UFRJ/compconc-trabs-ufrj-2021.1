@@ -20,6 +20,9 @@ char *inputFolderName;
 char *outputFolderName;
 int nthreads;
 int numFiles;
+int fileIndex;
+
+pthread_mutex_t lock;
 
 char* getFileName(char* inputFolderName, char* fileNumber) {
   char *fileName = (char *)malloc(sizeof(char));
@@ -61,11 +64,21 @@ void writeImage(char *fileName, int width, int height, unsigned char *output) {
   }
 }
 
+int getFileIndex(){
+  int file;
+  pthread_mutex_lock(&lock);
+  file = fileIndex++;
+  pthread_mutex_unlock(&lock);
+  return file;
+}
+
 void *task(void *arg){
   ll id = (ll)arg;
   printf("Começou thread %lld\n",id);
+  
+  int file = getFileIndex();
 
-  for(int file = id+1; file <= numFiles; file+=nthreads){
+  while(file <= numFiles){
     int width, height;
 
     char* fileNumber = getFileNumber(file);
@@ -77,6 +90,8 @@ void *task(void *arg){
 
     fileName = getFileName(outputFolderName, fileNumber);
     writeImage(fileName, width, height, outputImage);
+
+    file = getFileIndex();
   }
 
   pthread_exit(NULL);
@@ -85,7 +100,7 @@ void *task(void *arg){
 void initialization(int argc, char *argv[]) {
 
   if (argc < 4) {
-    printf("Digite: %s <Nome da pasta de entrada> <numero de fotos> <nome da pasta de saida> <numero de threads>\n", argv[0]);
+    printf("Digite: %s <Nome da pasta de entrada>/ <numero de fotos> <nome da pasta de saida>/ <numero de threads>\n", argv[0]);
     exit(1);
   }
 
@@ -93,6 +108,7 @@ void initialization(int argc, char *argv[]) {
   numFiles = atoi(argv[2]);
   outputFolderName = argv[3];
   nthreads = atoi(argv[4]);
+  fileIndex = 1;
 }
 
 pthread_t* createTid() {
@@ -134,8 +150,12 @@ int main(int argc, char *argv[]){
 
   GET_TIME(start);
 
+  pthread_mutex_init(&lock, NULL);
+
   initialization(argc, argv);
   convert();
+
+  pthread_mutex_destroy(&lock);
 
   GET_TIME(end);
 
