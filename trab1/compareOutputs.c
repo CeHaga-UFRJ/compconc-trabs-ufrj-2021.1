@@ -16,6 +16,7 @@ char *seqFolderName;
 char *concFolderName;
 int numFiles;
 
+// Monta o nome do arquivo
 char* getFileName(char* inputFolderName, char* fileNumber) {
   char *fileName = (char *)malloc(sizeof(char));
   strcpy(fileName, inputFolderName);
@@ -23,12 +24,14 @@ char* getFileName(char* inputFolderName, char* fileNumber) {
   return fileName;
 }
 
+// Converte um número para o formato "0000"
 char* getFileNumber(int file) {
   char *fileNumber = (char *)malloc(sizeof(char) * 16);
   sprintf(fileNumber, "%.4d.jpg", file);
   return fileNumber;
 }
 
+// Abre uma imagem e define os parâmetros width e height
 unsigned char* getImage(char *fileName,int* width,int* height) {
   unsigned char *img = stbi_load(fileName, width, height, NULL, DIMENSOES);
   if(!img){
@@ -38,6 +41,7 @@ unsigned char* getImage(char *fileName,int* width,int* height) {
   return img;
 }
 
+// Retorna se duas imagens sao diferentes
 int compareImages(unsigned char* imgSeq, unsigned char* imgConc, int width, int height) {
   for(ll i = 0; i < width*height*DIMENSOES; i++){
     if (imgSeq[i] != imgConc[i])
@@ -46,6 +50,7 @@ int compareImages(unsigned char* imgSeq, unsigned char* imgConc, int width, int 
   return 0;
 }
 
+// Compara as imagens geradas pelo codigo sequencial e pelo codigo concorrente
 void compare() {
     for (int file = 1; file <= numFiles; file++) {
         int width, height;
@@ -55,19 +60,24 @@ void compare() {
         char* seqFileName  = getFileName(seqFolderName, fileNumber);
         char* concFileName = getFileName(concFolderName, fileNumber);
 
+        // Le as imagens
         unsigned char* seqImage  = getImage(seqFileName, &width, &height);
         unsigned char* concImage = getImage(concFileName, &width, &height);
 
+        // Compara
         int different = compareImages(seqImage, concImage, width, height);
 
+        // Se for diferente, pode parar
         if (different == 1) {
             printf("ERRO-- Imagens diferentes\n fileNumber: %d\n", file);
             return;
         }
     }
+    // Se chegou ate aqui, nao houve diferencas
     printf("Todas as imagens estao iguais\n");
 }
 
+// Inicializa as variaveis
 void initialization(int argc, char *argv[]) {
 
   if (argc < 3) {
