@@ -26,7 +26,7 @@ pthread_mutex_t lock;
 
 // Monta o nome do arquivo
 char* getFileName(char* inputFolderName, char* fileNumber) {
-  char *fileName = (char *)malloc(sizeof(char));
+  char *fileName = (char *)malloc(sizeof(char)*32);
   strcpy(fileName, inputFolderName);
   strcat(fileName, fileNumber);
   return fileName;
@@ -41,6 +41,7 @@ char* getFileNumber(int file) {
 
 // Abre uma imagem e define os parâmetros width e height
 unsigned char* getImage(char *fileName,int* width,int* height) {
+  printf("Abrindo imagem %s\n",fileName);
   unsigned char *img = stbi_load(fileName, width, height, NULL, DIMENSOES);
   if(!img){
     printf("ERRO--getImage\n");

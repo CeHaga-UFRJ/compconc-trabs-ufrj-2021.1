@@ -68,7 +68,7 @@ void writeImage(char *fileName, int width, int height, unsigned char *output) {
 // Converte todas as imagens para escala de cinza
 void convert(){
   for(int file = 1; file <= numFiles; file++){
-    printf("Arquivo %d\n",file);
+    // printf("Arquivo %d\n",file);
     int width, height;
 
     // Le a imagem
@@ -83,8 +83,6 @@ void convert(){
     fileName = getFileName(outputFolderName, fileNumber);
     writeImage(fileName, width, height, outputImage);
   }
-
-  pthread_exit(NULL);
 }
 
 // Inicializa as variaveis
