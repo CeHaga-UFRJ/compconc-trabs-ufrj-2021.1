@@ -1,0 +1,126 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage[utf8]{inputenc}
+\usepackage{indentfirst}
+\usepackage{enumerate}
+\usepackage{tasks}
+\usepackage{exsheets}
+\SetupExSheets[question]{type=exam}
+\usepackage{amsmath}
+\usepackage[portuguese]{babel}
+\usepackage{hyperref}
+
+
+
+\title{
+    \textbf{Primeiro Trabalho - Relatório Final} \\
+     { \large \textbf{Computação Concorrente (MAB-117) -- 2021/1 REMOTO}} \\ 
+   \textit{\textbf{Conversão de Imagens em Escala de Cinza}}
+    }
+\author{\textbf{Carlos Bravo} \\ \textbf{Markson Arguello} \\ \\ 119136241 \\  119132001}
+\date{Agosto 2021}
+
+\begin{document}
+\maketitle
+
+\section{Projeto final e implementação da solução concorrente}
+A estratégia adotada foi com o uso de Sincronização por Exclusão Mútua, ao qual cada thread será responsável por abrir o próximo arquivo disponível da pasta.
+
+Esse método foi escolhido pois comparado com a escolha pré-definida de arquivos, obtivemos uma melhora no desempenho. Isso se deve ao fato de que as fotos são heterogêneas, então possuem tamanhos diferentes, algumas demandando maior processamento do que outras.
+
+O código se encontra no seguinte repositório: \url{https://github.com/CeHaga-UFRJ/compconc-trabs-ufrj-2021.1/tree/main/trab1}
+
+\section{Casos de teste}
+Foram separados 4 conjuntos de imagens:
+\begin{itemize}
+    \item 291 imagens da categoria "Computer\_science" da Wikimedia (Tamanhos variados) \cite{wikimediaCS}
+    \item 480 imagens da categoria "Communication" da Wikimedia (Tamanhos variados) \cite{wikimediaComm}
+    \item 500 frames da música Never Gonna Give You Up (1280x720) \cite{rickroll}
+    \item 1255 imagens em Full HD (1920x1080) \cite{wallpaper}
+\end{itemize}
+
+As imagens da Wikimedia foram obtidas através de um script disponibilizado no GitHub \cite{wikimediaScript}, os frames da música foram obtidos através de um site de conversão e as imagens em Full HD foram obtidas por um pacote disponibilizado na fonte. 
+
+Para a avaliação de corretude foram usados os 3 primeiros conjuntos de imagens, pois as imagens em Full HD demandam muito processamento e, consequentemente, o tempo de execução era maior para fazer o teste de corretude. Os conjuntos foram processados usando o código concorrente e o código sequencial, depois foram comparados por uma função feita em C que compara cada pixel das imagens. Com esse teste foi possível verificar a corretude em quantidade de imagens variando de 300 a 500 e com tamanhos homogêneos (Frames da música) e tamanhos heterogêneos (Imagens de categorias);
+
+Para a avaliação de desempenho foram usados todos os conjuntos de imagens, pois dessa forma temos imagens com pouco processamento (Primeira categoria com ~300 imagens), médio processamento (Segunda categoria e frames com ~500 imagens) e alto processamento (Imagens em Full HD com ~1200 imagens). Além disso é possível ver a diferença entre imagens homogêneas e heterogêneas com mesma quantidade, pela diferença entre os conjuntos com ~500 imagens. 
+
+\section{Avaliação de desempenho}
+
+\subsection{Hardware}
+\begin{itemize}
+    \item Processador: AMD Ryzen 3200G 
+        \subitem Nº de núcleos de CPU: 4 
+        \subitem Nº de threads: 4 
+        \subitem Nº de núcleos de GPU: 8 
+    \item Sistema operacional: Subsistema Windows para Linux (WSL)
+\end{itemize}
+
+\subsection{Medição}
+Cada conjunto foi executado 3 vezes e o resultado anotado foi sua mediana. A aceleração foi calculada dividindo o tempo sequencial pelo melhor tempo concorrente obtido (Usando Exclusão Mútua e com 4 threads).
+\begin{itemize}
+    \item Wikimedia CS: 2,926826
+    \item Wikimedia Comm: 3,533919
+    \item Rick Astley: 3,792868
+    \item Full HD: 2,91622417
+\end{itemize}
+
+O desempenho de cada conjunto foi comparado na versão sequencial, na versão com Sincronização por Exclusão Mútua (chamado de Conc1) e na versão concorrente com arquivos pré-definidos (chamado de Conc2), com o número de threads variando entre 1, 2 e 4. Os resultados obtidos estão na Tabela \ref{tab:results}.
+
+\begin{table}[]
+\begin{tabular}{|l|l|r|r|r|r|r|r|}
+\hline
+ &
+  Seq &
+  \multicolumn{1}{l|}{Conc1 (1)} &
+  \multicolumn{1}{l|}{Conc1 (2)} &
+  \multicolumn{1}{l|}{Conc1 (4)} &
+  \multicolumn{1}{l|}{Conc2 (1)} &
+  \multicolumn{1}{l|}{Conc2 (2)} &
+  \multicolumn{1}{l|}{Conc2 (4)} \\ \hline
+Wikimedia CS   & 37,915988  & 37,529286  & 20,998247  & 12,954642 & 38,052389  & 24,674403  & 18,711385  \\ \hline
+Wikimedia Comm & 127,877736 & 126,630292 & 65,332378  & 36,185808 & 126,410067 & 68,173252  & 38,172374  \\ \hline
+Rick Astley    & 32,331080  & 33,523216  & 16,893766  & 8,524176  & 32,449528  & 17,048341  & 9,094734   \\ \hline
+Full HD        & 225,168183 & 226,247122 & 122,707983 & 77,212234 & 220,061810 & 132,496438 & 106,157050 \\ \hline
+\end{tabular}
+\caption{Resultados obtidos nas diferentes versões}
+\label{tab:results}
+\end{table}
+
+\section{Discussão}
+O ganho de desempenho obtido não foi esperado. Pois os conjuntos Wikimedia Comm, com tamanhos diferentes de imagens, e Rick Astley, com tamanhos iguais de imagens, ambos com uma quantidade aproximada de 500, obtiveram as melhores acelerações. No entanto as categorias restantes obtiveram uma aceleração menor mesmo possuindo propriedades opostas (Wikimedia CS possui poucas imagens com tamanhos diferentes enquanto Full HD possui muitas imagens com tamanhos iguais).
+
+Para descobrir a causa desse efeito seriam necessários mais conjuntos de imagens com mais variação nas propriedades, pois pode ser uma consequência das imagens como pode ser variação do processamento do computador na prioridade de threads.
+
+Nós criamos 4 programas, um converte a imagem de maneira sequencial, dois de maneira concorrente porém um com mutex e outro sem, e por fim um programa para comparar os outputs dos programas. Com isso, vimos a necessidade de criar nossa própria biblioteca pois, para cada programa, utilizamos funções de manipulação de imagem como ler o nome do arquivo e converter a imagem para array de ponteiros.
+
+Uma das dificuldades encontradas foi a manipulação de imagem utilizando a linguagem C, mas encontramos uma biblioteca chamada stb\cite{stb}, o que levou alguns dias para que nos acostumássemos a mesma. Também tivemos dificuldade na obtenção das imagens, pois não encontramos nenhum site com imagens de domínio público e com download em larga escala, mas com o script para obtenção de imagens da Wikimedia esse problema foi solucionado.
+
+Outra dificuldade foi em encontrar uma solução para percorrer todos os arquivos de uma pasta com nomes e formatos diferentes, então definimos que os arquivos precisam estar no formato "0001.jpg" a "9999.jpg". A conversão precisa ser feita antes da execução do código, o que é possível com alguns scripts em bash.
+
+\begin{thebibliography}{7}
+
+\bibitem{wikiGray}
+Nível de cinza, from Wikipedia. Disponível em \url{https://pt.wikipedia.org/wiki/N\%C3\%ADvel_de_cinza}. Acesso em: 02 ago. 2021
+
+\bibitem{wikimediaCS}
+Category:Computer science. Disponível em \url{https://commons.wikimedia.org/wiki/Category:Computer\_science}. Acesso em: 28 ago. 2021
+
+\bibitem{wikimediaComm}
+Category:Communication. Disponível em \url{https://commons.wikimedia.org/wiki/Category:Communication}. Acesso em: 28 ago. 2021
+
+\bibitem{rickroll}
+Rick Astley - Never Gonna Give You Up (Official Music Video). Disponível em \url{https://www.youtube.com/watch?v=dQw4w9WgXcQ}. Acesso em: 04 ago. 2021
+
+\bibitem{wallpaper}
+Droid Views. Disponível em \url{http://www.droidviews.com/downloads/wallpapers/}. Acesso em: 28 ago. 2021
+
+\bibitem{wikimediaScript}
+Commons Category Downloader. Disponível em \url{https://github.com/aucuparia/commons-category-downloader}. Acesso em: 28 ago. 2021
+
+\bibitem{stb}
+Bibliotecas stb. Disponível em \url{https://github.com/nothings/stb}. Acesso em 02 ago. 2021
+
+\end{thebibliography}
+
+\end{document}
