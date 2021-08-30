@@ -14,7 +14,7 @@ int numFiles;
 // Tarefa assincrona
 void *task(void *arg){
   ll id = (ll)arg;
-  printf("Começou thread %lld\n",id);
+  printf("Comecou thread %lld\n",id);
 
   for(int file = id+1; file <= numFiles; file+=nthreads){
     int width, height;
@@ -38,14 +38,14 @@ void *task(void *arg){
 // Inicializa as variaveis
 void initialization(int argc, char *argv[]) {
 
-  if (argc < 4) {
-    printf("Digite: %s <Nome da pasta de entrada> <numero de fotos> <nome da pasta de saida> <numero de threads>\n", argv[0]);
+  if (argc != 5) {
+    printf("Digite: %s <Nome da pasta de entrada> <Numero de fotos> <Nome da pasta de saida> <Numero de threads>\n", argv[0]);
     exit(1);
   }
 
-  inputFolderName = argv[1];
+  inputFolderName = formatFolderName(argv[1]);
   numFiles = atoi(argv[2]);
-  outputFolderName = argv[3];
+  outputFolderName = formatFolderName(argv[3]);
   nthreads = atoi(argv[4]);
 }
 

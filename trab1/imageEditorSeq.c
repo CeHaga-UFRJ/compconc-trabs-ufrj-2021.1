@@ -13,7 +13,6 @@ int numFiles;
 // Converte todas as imagens para escala de cinza
 void convert(){
   for(int file = 1; file <= numFiles; file++){
-    printf("Arquivo %d\n",file);
     int width, height;
 
     // Le a imagem
@@ -28,21 +27,18 @@ void convert(){
     fileName = getFileName(outputFolderName, fileNumber);
     writeImage(fileName, width, height, outputImage);
   }
-
-
 }
 
 // Inicializa as variaveis
 void initialization(int argc, char *argv[]) {
-
-  if (argc < 4) {
-    printf("Digite: %s <Nome da pasta de entrada> <numero de fotos> <nome da pasta de saida>\n", argv[0]);
+  if (argc != 4) {
+    printf("Digite: %s <Nome da pasta de entrada> <Numero de fotos> <Nome da pasta de saida>\n", argv[0]);
     exit(1);
   }
 
-  inputFolderName = argv[1];
+  inputFolderName = formatFolderName(argv[1]);
   numFiles = atoi(argv[2]);
-  outputFolderName = argv[3];
+  outputFolderName = formatFolderName(argv[3]);
 }
 
 int main(int argc, char *argv[]){

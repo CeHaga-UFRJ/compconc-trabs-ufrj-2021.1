@@ -9,7 +9,6 @@ char *seqFolderName;
 char *concFolderName;
 int numFiles;
 
-
 // Compara as imagens geradas pelo codigo sequencial e pelo codigo concorrente
 void compare() {
     for (int file = 1; file <= numFiles; file++) {
@@ -41,7 +40,7 @@ void compare() {
 void initialization(int argc, char *argv[]) {
 
   if (argc < 3) {
-    printf("Digite: %s <Nome da pasta do output sequencial> <numero de fotos> <Nome da pasta do output concorrente>\n", argv[0]);
+    printf("Digite: %s <Nome da pasta do output sequencial>/ <numero de fotos> <Nome da pasta do output concorrente>/\n", argv[0]);
     exit(1);
   }
 
