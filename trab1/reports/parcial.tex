@@ -1,0 +1,73 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage[utf8]{inputenc}
+\usepackage{indentfirst}
+\usepackage{enumerate}
+\usepackage{tasks}
+\usepackage{exsheets}
+\SetupExSheets[question]{type=exam}
+\usepackage{amsmath}
+\usepackage[portuguese]{babel}
+\usepackage{hyperref}
+
+
+
+\title{
+    \textbf{Primeiro Trabalho - Relatório Parcial} \\
+     { \large \textbf{Computação Concorrente (MAB-117) -- 2021/1 REMOTO}} \\ 
+   \textit{\textbf{Conversão de Imagens em Escala de Cinza}}
+    }
+\author{\textbf{Carlos Bravo} \\ \textbf{Markson Arguello} \\ \\ 119136241 \\  119132001}
+\date{Agosto 2021}
+
+\begin{document}
+
+\maketitle
+
+\section{Descrição do problema}
+    O problema escolhido se trata de converter um diretório com várias fotos em RGB para tons de cinza. O programa deve receber fotos coloridas de entrada e criar novas fotos convertendo as cores em tons de cinza. 
+    
+    Para que isso aconteça podemos representar a foto como um vetor onde os índices \(3i, 3i + 1 \text{ e } 3i + 2\) representam a quantidade de vermelho, verde e azul do pixel \(i\). Com isso, basta mudarmos os valores adicionando pesos nessas cores para criar a foto em tons de cinza (30\% vermelho, 59\% verde e 11\% azul) \cite{wikiGray}. 
+    
+    Como vamos converter várias fotos e precisaremos percorrer todo o vetor de cada uma das fotos para isso, uma vez que as fotos são independentes vemos que podemos utilizar a computação concorrente para obter um ganho de desempenho.
+    
+    
+\section{Projeto inicial da solução concorrente}
+    Para utilizar a concorrência poderemos utilizar alguma das seguintes abordagens:
+     \begin{itemize}
+        \item Cada thread computa uma linha ou coluna da foto
+        \item As threads se intercalam entre pixels
+        \item Cada thread computa uma foto
+    \end{itemize}
+    Nós escolhemos utilizar a 3º opção pois ela nos permite que cada thread seja responsável por ler, processar e escrever independente a foto, impedindo problemas de concorrência na leitura e escrita de arquivos. Além disso, podemos ter duas abordagens para essa opção:
+    \begin{itemize}
+        \item As threads lêem os arquivos alternadamente
+        \item Cada thread lê o arquivo que está livre no momento
+    \end{itemize}
+    A escolha da sub-opção será feita de acordo com o tempo de execução, então será feita das duas formas e assim comparadas, para saber qual é melhor para o problema.
+    
+    As estruturas de dados serão:
+    \begin{itemize}
+        \item Atributos do arquivo (Globais)
+        \item Dados da imagem (Local para a thread responsável)
+    \end{itemize}
+    
+    
+    Como entrada é passado um identificador para cada thread, como saída nada é esperado, pois cada thread cuidará de todos as etapas no processo de conversão. 
+     
+\section{Projeto inicial dos casos de teste}
+    Para o teste de corretude usaremos pastas com tamanhos e quantidades diferentes de fotos. Depois será feito um algoritmo sequencial que rodará para as mesmas imagens, e assim basta comparar os pixels de cada uma das imagens.
+    
+    Para o teste de desempenho será criada uma pasta com uma grande quantidade de fotos, como por exemplo todos os frames da música Never Gonna Give You Up (Rick Astley) \cite{rickrolled}.
+    
+\begin{thebibliography}{2}
+
+\bibitem{wikiGray}
+Nível de cinza, from Wikipedia. Disponível em \url{https://pt.wikipedia.org/wiki/N\%C3\%ADvel_de_cinza}. Acesso em: 02 ago. 2021
+
+\bibitem{rickrolled}
+Rick Astley - Never Gonna Give You Up (Official Music Video). Disponível em \url{https://www.youtube.com/watch?v=dQw4w9WgXcQ}. Acesso em: 04 ago. 2021
+
+\end{thebibliography}
+
+\end{document}
