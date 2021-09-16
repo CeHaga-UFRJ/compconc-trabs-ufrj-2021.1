@@ -40,7 +40,7 @@ void compare() {
 void initialization(int argc, char *argv[]) {
 
   if (argc < 3) {
-    printf("Digite: %s <Nome da pasta do output sequencial>/ <numero de fotos> <Nome da pasta do output concorrente>/\n", argv[0]);
+    printf("Digite: %s <Nome da pasta do output sequencial> <Numero de fotos> <Nome da pasta do output concorrente>\n", argv[0]);
     exit(1);
   }
 

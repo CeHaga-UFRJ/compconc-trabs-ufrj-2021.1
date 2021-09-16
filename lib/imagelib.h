@@ -1,8 +1,8 @@
 #define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb_image.h"
+#include "stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../lib/stb_image_write.h"
+#include "stb_image_write.h"
 
 #define ll long long int
 #define DIMENSOES 3 // Numero de cores na imagem
@@ -14,6 +14,7 @@ unsigned char* getImage(char *fileName,int* width,int* height);
 unsigned char* convertImage(unsigned char* img, int width, int height);
 void writeImage(char *fileName, int width, int height, unsigned char *output);
 int compareImages(unsigned char* imgSeq, unsigned char* imgConc, int width, int height);
+char* formatFolderName(char* folder);
 
 // Monta o nome do arquivo
 char* getFileName(char* inputFolderName, char* fileNumber) {
@@ -69,3 +70,13 @@ int compareImages(unsigned char* imgSeq, unsigned char* imgConc, int width, int 
   return 0;
 }
 
+char* formatFolderName(char* folder){
+  char* folderName = (char *)malloc(sizeof(char));
+  strcpy(folderName, folder);
+
+  int size;
+  for(size = 0; folderName[size] != '\0'; size++);
+
+  if(folderName[size-1] != '/') strcat(folderName,"/");
+  return folderName;
+}
