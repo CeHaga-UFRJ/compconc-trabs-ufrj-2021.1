@@ -49,7 +49,7 @@ void initArgs(int argc, char *argv[]){
   sem_init(&fullSlots, 0, 0);
   sem_init(&emptySlots, 0, C);
 
-  pthread_mutex_init(&mutexCons);
+  pthread_mutex_init(&mutexCons, NULL);
 }
 
 void endArgs(){
