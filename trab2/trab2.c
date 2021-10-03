@@ -7,25 +7,35 @@
 
 #define INVALID_INPUT 1
 #define INVALID_FILE 2
+#define CREATE_THREAD_ERROR 3
+#define JOIN_THREAD_ERROR 4
+#define CREATE_TID_ERROR 5
+
 #define READING "r"
 #define WRITING "w"
 
+#define BUFFER_SIZE 10
+
 int C; // Numero de threads
 int N; // Tamanho do bloco
-char *inputFileName; // Arquivo de entrada
-char *outputFileName; // Arquivo de saida
-sem_t fullSlots; // Semaforo de posicoes ocupadas
-sem_t emptySlots; // Semaforo de posicoes livres
-pthread_mutex_t mutexCons; // Mutex para consumidores
-pthread_mutex_t mutexWrite; // Mutex para escrita no arquivo
-pthread_mutex_t mutexFileOver;
-int *buffer[10]; // Buffer
+int *buffer[BUFFER_SIZE]; // Buffer
 int in; // Index dos produtores 
 int out; // Index dos consumidores
-int isFileOver;
-FILE* inputFile;
-FILE* outputFile;
+int isFileOver; // Condicao do arquivo ter acabado
 
+FILE* inputFile; // Arquivo de entrada
+FILE* outputFile; // Arquivo de saida
+
+sem_t fullSlots; // Semaforo de posicoes ocupadas
+sem_t emptySlots; // Semaforo de posicoes livres
+
+pthread_mutex_t mutexCons; // Mutex para consumidores
+pthread_mutex_t mutexWrite; // Mutex para escrita no arquivo
+pthread_mutex_t mutexFileOver; // Mutex para terminação da producao
+
+/*
+* FUNCOES RELACIONADAS A ARQUIVO
+*/
 
 FILE* getFile(char* path, char* mode) {
   FILE* arq = fopen(path, mode);
@@ -36,37 +46,18 @@ FILE* getFile(char* path, char* mode) {
   return arq;
 }
 
-char* getLine(FILE* file) {
-  char* line = (char *) malloc(sizeof(char) * 500);
-  line = fgets(line, 500, file);
-  return line;
+int getTotalLines(FILE* file){
+  int n;
+  fscanf(file, "%d", &n);
+  return n/N;
 }
 
-int* stringToBlock(char* string) {
-  const char* delim = " ";
-  int* block = (int * ) malloc(sizeof(int) * N);
-  char* token = strtok(string, delim);
-  int i = 0;
-  while (token != NULL) {
-    block[i] = atoi(token);
-    i++;
-    token = strtok(NULL, delim);
+int* getBlock(FILE* file) {
+  int *block = (int *)malloc(sizeof(int) * N);
+  for(int i = 0; i < N; i++){
+    fscanf(file, "%d", block+i);
   }
   return block;
-}
-
-char* blockToString(int* block) {
-  char* line = (char *) malloc(sizeof(char) * 500);
-  int index = 0;
-  for (int i = 0; i < N; i++) {
-    char aux[20];
-    if (i > 0)
-      line = strcat(line, " ");
-    sprintf(aux, "%d", block[i]);
-    line = strcat(line, aux);
-    
-  }
-  return line;
 }
 
 void sort(int* block) {
@@ -74,24 +65,33 @@ void sort(int* block) {
     for (int j = i + 1; j < N; j++) {
       if (block[i] > block[j]) {
         int aux  = block[i];
-	block[i] = block[j];
-	block[j] = aux;
+          block[i] = block[j];
+          block[j] = aux;
       }
     }
   }
 }
 
-void write(char* line) {
+void write(FILE *file, int* block) {
   pthread_mutex_lock(&mutexWrite);
-  fprintf(outputFile, "%s\n", line);
+  for(int i = 0; i < N; i++){
+    fprintf(file, "%d ", block[i]);
+  }
+  fprintf(file, "\n");
   pthread_mutex_unlock(&mutexWrite);
+}
+
+void setFileOver(){
+  pthread_mutex_lock(&mutexFileOver);
+  isFileOver = 1;
+  pthread_mutex_unlock(&mutexFileOver);
 }
 
 void insert(int *block) {
   sem_wait(&emptySlots);
 
   buffer[in] = block;
-  in = (in + 1) % N;
+  in = (in + 1) % BUFFER_SIZE;
 
   sem_post(&fullSlots);
 }
@@ -112,28 +112,26 @@ int* removeNumber(){
 
   
   block = buffer[out];
-  out = (out + 1) % N;
+  out = (out + 1) % BUFFER_SIZE;
 
   pthread_mutex_unlock(&mutexCons);
   sem_post(&emptySlots);
   return block;
 }
 
+/*
+* FUNCOES RELACIONADAS A THREADS
+*/
+
 void* produtor(void* arg) {
-  char* line = getLine(inputFile);
-  while(1) {
-    line = getLine(inputFile);
-    if (feof(inputFile)) {
-      pthread_mutex_lock(&mutexFileOver);
-      isFileOver = 1;
-      pthread_mutex_unlock(&mutexFileOver);
-      for (int i = 0; i < C; i++) 
-        sem_post(&fullSlots);
-      break;
-    }
-    int* block = stringToBlock(line);
+  int lines = getTotalLines(inputFile);
+  for(int i = 0; i < lines; i++) {
+    int* block = getBlock(inputFile);
     insert(block);
   }
+  setFileOver();
+  for (int i = 0; i < C; i++) 
+    sem_post(&fullSlots);
   pthread_exit(NULL);
 }
 
@@ -142,14 +140,51 @@ void* consumidor(void* arg) {
     int* block = removeNumber();
     if (block == NULL) break;
     sort(block);
-    
-    char* line = blockToString(block);
-    write(line);
+    write(outputFile,block);
   }
   pthread_exit(NULL);
 }
+pthread_t* createTid(int n) { 
+  pthread_t* tid = (pthread_t *) malloc(sizeof(pthread_t) * n);
+  if (tid == NULL) {
+    printf("ERRO--createTid");
+    exit(CREATE_TID_ERROR);
+  }
+  return tid;
+}
 
+void createThreads(pthread_t* tid, int n, void *task) {
+  for (int i = 0; i < n; i++) {
+    if (pthread_create(tid+i, NULL, task, NULL)) {
+      printf("ERRO--createThreads\n");
+      exit(CREATE_THREAD_ERROR);
+    }
+  }
+}
 
+void waitThreads(pthread_t* tid, int n) {
+  for (int i = 0; i < n; i++) {
+    if (pthread_join(tid[i], NULL)) {
+      printf("ERRO--pthread_join");
+      exit(JOIN_THREAD_ERROR);
+    }
+  }
+}
+
+void run() {
+  pthread_t* prod  = createTid(1);
+  pthread_t* cons = createTid(C); 
+
+  createThreads(prod, 1, produtor);
+  createThreads(cons, C, consumidor);
+  
+  waitThreads(prod, 1);
+  waitThreads(cons, C);
+}
+
+/*
+* FUNCOES RELACIONADAS A INICIALIZACAO DO PROGRAMA
+*/
 
 void initArgs(int argc, char *argv[]){
   if(argc < 5){
@@ -158,8 +193,8 @@ void initArgs(int argc, char *argv[]){
   }
   C = atoi(argv[1]);
   N = atoi(argv[2]);
-  inputFileName = argv[3];
-  outputFileName = argv[4];
+  char *inputFileName = argv[3];
+  char *outputFileName = argv[4];
 
   in = 0;
   out = 0;
@@ -176,64 +211,10 @@ void initArgs(int argc, char *argv[]){
   outputFile = getFile(outputFileName, WRITING); 
 }
 
-pthread_t* createTid() { 
-  pthread_t* tid = (pthread_t *) malloc(sizeof(pthread_t) * C);
-  if (tid == NULL) {
-    printf("ERRO--createTid");
-    exit(1);
-  }
-  return tid;
-}
-
-pthread_t* createTidProd() {
-  pthread_t* tid = (pthread_t *) malloc(sizeof(pthread_t));
-  if (tid == NULL) {
-    printf("ERRO--createTidProd\n");
-    exit(1);
-  } 
-  return tid;
-}
-
-void createThreads(pthread_t* tid, pthread_t* prod) {
-  if (pthread_create(prod, NULL, produtor, NULL)) {
-    printf("ERRO--createThreads\n");
-    exit(1);
-  }
-  for (int i = 0; i < C; i++) {
-    if (pthread_create(tid+i, NULL, consumidor, NULL)) {
-      printf("ERRO--createThreads\n");
-      exit(1);
-    }
-  }
-}
-
-void waitThreads(pthread_t* tid, pthread_t* prod) {
-  if (pthread_join(*prod, NULL)) {
-    printf("ERRO--pthread_join\n");
-    exit(2);
-  }
-  for (int i = 0; i < C; i++) {
-    if (pthread_join(tid[i], NULL)) {
-      printf("ERRO--pthread_join");
-      exit(2);
-    }
-  }
-}
-
-
-void init() {
-  pthread_t* tid  = createTid();
-  pthread_t* prod = createTidProd(); 
-  createThreads(tid, prod);
-  waitThreads(tid, prod);
-}
-
-
 void endArgs(){
-  for(int i = 0; i < 10; i++){
+  for(int i = 0; i < BUFFER_SIZE; i++){
     free(buffer[i]);
   }
-  //free(buffer);
 
   sem_destroy(&fullSlots);
   sem_destroy(&emptySlots);
@@ -248,7 +229,7 @@ void endArgs(){
 
 int main(int argc, char *argv[]){
   initArgs(argc, argv);
-  init();
+  run();
   endArgs();
   return 0;
 }
