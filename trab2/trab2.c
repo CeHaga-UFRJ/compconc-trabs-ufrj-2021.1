@@ -37,6 +37,7 @@ pthread_mutex_t mutexFileOver; // Mutex para terminação da producao
 * FUNCOES RELACIONADAS A ARQUIVO
 */
 
+//Abre e retorna um ponteiro para um arquivo 
 FILE* getFile(char* path, char* mode) {
   FILE* arq = fopen(path, mode);
   if (arq == NULL) {
@@ -46,12 +47,16 @@ FILE* getFile(char* path, char* mode) {
   return arq;
 }
 
+//Retorna o número de linhas do arquivo de entrada
+//n é o primeiro número do arquivo
+//N é o tamanho de cada bloco
 int getTotalLines(FILE* file){
   int n;
   fscanf(file, "%d", &n);
   return n/N;
 }
 
+//Lê o arquivo e transforma uma linha em um vetor de inteiros
 int* getBlock(FILE* file) {
   int *block = (int *)malloc(sizeof(int) * N);
   for(int i = 0; i < N; i++){
@@ -60,6 +65,7 @@ int* getBlock(FILE* file) {
   return block;
 }
 
+//Ordena um vetor de inteiros
 void sort(int* block) {
   for (int i = 0; i < N - 1; i++) {
     for (int j = i + 1; j < N; j++) {
@@ -72,6 +78,7 @@ void sort(int* block) {
   }
 }
 
+//Escreve um bloco no arquivo de saída
 void write(FILE *file, int* block) {
   pthread_mutex_lock(&mutexWrite);
   for(int i = 0; i < N; i++){
@@ -81,12 +88,14 @@ void write(FILE *file, int* block) {
   pthread_mutex_unlock(&mutexWrite);
 }
 
+//Indica que o arquivo acabou
 void setFileOver(){
   pthread_mutex_lock(&mutexFileOver);
   isFileOver = 1;
   pthread_mutex_unlock(&mutexFileOver);
 }
 
+//Insere um bloco no buffer
 void insert(int *block) {
   sem_wait(&emptySlots);
 
@@ -96,6 +105,7 @@ void insert(int *block) {
   sem_post(&fullSlots);
 }
 
+//Retira um bloco do buffer
 int* removeNumber(){
   int *block;
   sem_wait(&fullSlots);
@@ -123,6 +133,7 @@ int* removeNumber(){
 * FUNCOES RELACIONADAS A THREADS
 */
 
+//Thread produtora
 void* produtor(void* arg) {
   int lines = getTotalLines(inputFile);
   for(int i = 0; i < lines; i++) {
@@ -135,6 +146,7 @@ void* produtor(void* arg) {
   pthread_exit(NULL);
 }
 
+//Thread consumidora
 void* consumidor(void* arg) {
   while(1) {
     int* block = removeNumber();
@@ -153,6 +165,7 @@ pthread_t* createTid(int n) {
   return tid;
 }
 
+//Cria as threads chamando o pthread_create
 void createThreads(pthread_t* tid, int n, void *task) {
   for (int i = 0; i < n; i++) {
     if (pthread_create(tid+i, NULL, task, NULL)) {
@@ -162,6 +175,7 @@ void createThreads(pthread_t* tid, int n, void *task) {
   }
 }
 
+//Espera as threads terminarem
 void waitThreads(pthread_t* tid, int n) {
   for (int i = 0; i < n; i++) {
     if (pthread_join(tid[i], NULL)) {
@@ -171,6 +185,7 @@ void waitThreads(pthread_t* tid, int n) {
   }
 }
 
+//Função que cria os indentificadores da threads, que cria as threads e espera elas terminarem
 void run() {
   pthread_t* prod  = createTid(1);
   pthread_t* cons = createTid(C); 
@@ -186,6 +201,7 @@ void run() {
 * FUNCOES RELACIONADAS A INICIALIZACAO DO PROGRAMA
 */
 
+//Inicializa as variáveis globais, arquivos, semáforos
 void initArgs(int argc, char *argv[]){
   if(argc < 5){
     printf("ERRO DE ENTRADA. Modo de usar:\n%s <Numero de threads> <Tamanho do bloco> <Nome do arquivo de entrada> <Nome do arquivo de saida>\n",argv[0]);
@@ -211,6 +227,7 @@ void initArgs(int argc, char *argv[]){
   outputFile = getFile(outputFileName, WRITING); 
 }
 
+//Libera o buffer, semáforos, arquivos e mutex
 void endArgs(){
   for(int i = 0; i < BUFFER_SIZE; i++){
     free(buffer[i]);
@@ -227,6 +244,7 @@ void endArgs(){
   fclose(outputFile);
 }
 
+//Função principal
 int main(int argc, char *argv[]){
   initArgs(argc, argv);
   run();
