@@ -244,10 +244,23 @@ void endArgs(){
   fclose(outputFile);
 }
 
+void printDeltaTime(double start, double end) {
+  double delta = end - start;
+  printf("Tempo total: %f\n", delta);
+}
+
 //Função principal
 int main(int argc, char *argv[]){
+  double start, end;
+
   initArgs(argc, argv);
+
+  GET_TIME(start);
   run();
+  GET_TIME(end);
+
   endArgs();
+
+  printDeltaTime(start, end);
   return 0;
 }
